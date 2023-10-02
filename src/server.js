@@ -36,6 +36,7 @@ app.use(function (request, response, next) {
 app.use(passport.initialize());
 app.use(passport.session());
 require('./config/passport');
+const {checkAuthenticated, checkNotAuthenticated} = require("./middlewares/auth");
 
 //view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -51,10 +52,28 @@ mongoose.connect(`mongodb+srv://hooney200:hooney1108@cluster0.155h4r3.mongodb.ne
 
 app.use('/static', express.static(path.join(__dirname, 'public')));
 
-app.get('/', (req, res) => {
+app.get('/', checkAuthenticated, (req, res) => {
     res.render('index');
 })
-app.get('/login', (req, res) => {
+
+app.get('/signup', checkNotAuthenticated, (req, res) => {
+    res.render('signup');
+})
+app.post('/signup', async (req, res) => {
+    //user 객체 생성
+    const user = new User(req.body);
+    //user 컬렉션에 user 저장
+    try {
+        await user.save();
+        return res.status(200).json({
+            success: true
+        })
+    } catch (error) {
+        console.error(error);
+    }
+})
+
+app.get('/login', checkNotAuthenticated, (req, res) => {
     res.render('login');
 })
 
@@ -75,21 +94,11 @@ app.post('/login', (req, res, next) => {
     }) (req, res, next);
 })
 
-app.get('/signup', (req, res) => {
-    res.render('signup');
-})
-app.post('/signup', async (req, res) => {
-    //user 객체 생성
-    const user = new User(req.body);
-    //user 컬렉션에 user 저장
-    try {
-        await user.save();
-        return res.status(200).json({
-            success: true
-        })
-    } catch (error) {
-        console.error(error);
-    }
+app.post('/logout', (req, res, next) => {
+    req.logOut(function (err) {
+        if (err) { return next(err) }
+        res.redirect('/login');
+    })
 })
 
 const port = 4000;
