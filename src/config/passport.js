@@ -1,6 +1,8 @@
 const passport = require('passport');
 const User = require('../models/users.model');
 const LocalStrategy = require('passport-local').Strategy;
+const GoogleStrategy = require('passport-google-oauth20').Strategy;
+require('dotenv').config()
 
 //req.login(user) 로그인 시 1회  세션 생성
 passport.serializeUser((user, done) => {
@@ -13,7 +15,7 @@ passport.deserializeUser((id, done) => {
             done(null, user);
         })
 })
-passport.use("local", new LocalStrategy({ usernameField: 'email', passwordField: 'password' },
+const localStrategyConfig = new LocalStrategy({ usernameField: 'email', passwordField: 'password' },
     (email, password, done) => {
         console.log('passport 미들웨어 진입');
 
@@ -38,4 +40,36 @@ passport.use("local", new LocalStrategy({ usernameField: 'email', passwordField:
                 return done(err);
             });
     }
-));
+);
+passport.use('local', localStrategyConfig);
+
+const googleStrategyConfig = new GoogleStrategy({
+    clientID: process.env.GOOGLECLIENT_ID,
+    clientSecret: process.env.GOOGLECLIENT_SECRET,
+    callbackURL: '/auth/google/callback',
+    scope: ['email', 'profile']
+}, (accessToken, refreshToken, profile, done) => {
+    console.log('google profile: ', profile);
+
+    User.findOne({googleId: profile.id})
+        .then(existingUser => {
+            if (existingUser) {
+                return existingUser;  // 기존 사용자 반환
+            }
+
+            const user = new User();
+            user.email = profile.emails[0].value;
+            user.googleId = profile.id;
+
+            return user.save();  // 새로운 사용자 저장
+        })
+        .then(user => {
+            done(null, user);  // 한 번만 done() 호출
+        })
+        .catch(err => {
+            console.log(err);
+            done(err);
+        });
+});
+passport.use('google', googleStrategyConfig);
+
