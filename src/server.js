@@ -4,17 +4,18 @@ const path = require('path');
 const User = require('./models/users.model');
 const passport = require('passport');
 const cookieSession = require('cookie-session');
+const config = require('config');
+require('dotenv').config()
 
 const app = express();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-const cookieEncryptionKey = 'superSecret-key';
 //cookie session 이용
 app.use(cookieSession({
     name: 'cookie-session',
-    keys: [cookieEncryptionKey]
+    keys: [process.env.COOKIE_ENCRYPTION_KEY]
 }))
 
 // register regenerate & save after the cookieSession middleware initialization
@@ -42,7 +43,7 @@ const {checkAuthenticated, checkNotAuthenticated} = require("./middlewares/auth"
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 
-mongoose.connect(`mongodb+srv://hooney200:hooney1108@cluster0.155h4r3.mongodb.net/?retryWrites=true&w=majority`)
+mongoose.connect(process.env.MONGO_URI)
     .then(() => {
         console.log('mongodb connected');
     })
@@ -94,6 +95,12 @@ app.post('/login', (req, res, next) => {
     }) (req, res, next);
 })
 
+app.get('/auth/google', passport.authenticate('google'));
+app.get('/auth/google/callback', passport.authenticate('google', {
+    successReturnToOrRedirect: '/',
+    failureRedirect: '/login'
+}))
+
 app.post('/logout', (req, res, next) => {
     req.logOut(function (err) {
         if (err) { return next(err) }
@@ -101,7 +108,8 @@ app.post('/logout', (req, res, next) => {
     })
 })
 
-const port = 4000;
+const serverConfig = config.get('server');
+const port = serverConfig.port;
 app.listen(port, () => {
     console.log(`Listening on ${port}`);
 });
