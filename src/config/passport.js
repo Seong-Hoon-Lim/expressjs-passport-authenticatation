@@ -2,6 +2,7 @@ const passport = require('passport');
 const User = require('../models/users.model');
 const LocalStrategy = require('passport-local').Strategy;
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
+const KakaoStrategy = require('passport-kakao').Strategy;
 require('dotenv').config()
 
 //req.login(user) 로그인 시 1회  세션 생성
@@ -71,5 +72,30 @@ const googleStrategyConfig = new GoogleStrategy({
             done(err);
         });
 });
+const kakaoStrategyConfig = new KakaoStrategy({
+    clientID: process.env.KAKAO_CLIENT_ID,
+    callbackURL: '/auth/kakao/callback'
+}, (accessToken, refreshToken, profile, done) => {
+    console.log('kakao profile: ', profile);
+
+    User.findOne({kakaoId: profile.id})
+        .then(existingUser => {
+            if (existingUser) {
+                return existingUser;  // 기존 사용자 반환
+            }
+            const user = new User();
+            user.kakaoId = profile.id;
+            user.email = profile._json.kakao_account.email;
+            return user.save();  // 새로운 사용자 저장
+        })
+        .then(user => {
+            done(null, user);  // 한 번만 done() 호출
+        })
+        .catch(err => {
+            console.log(err);
+            done(err);
+        });
+});
 passport.use('google', googleStrategyConfig);
+passport.use('kakao', kakaoStrategyConfig);
 
