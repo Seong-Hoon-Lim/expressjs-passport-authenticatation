@@ -1,7 +1,7 @@
 # Ref - fastcampus : expressjs-passport-authenticatation 프로젝트
-Express Js 와 Passport 를 활용한 간단한 회원가입 및 로그인 인증 미니 프로젝트 (v0.1)
-module 과 router 활용 MVC 패턴 적용
-개인 toy project (배포 X)
+* Express Js 와 Passport 를 활용한 간단한 회원가입 및 로그인 인증 미니 프로젝트 (v0.1)
+* module 과 router 활용 MVC 패턴 적용
+* 개인 toy project (배포 X)
 
 ## 주요 기능
 * passport-local strategy 를 활용한 일반 회원가입 및 로그인 인증
